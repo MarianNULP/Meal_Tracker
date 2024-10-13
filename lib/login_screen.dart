@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:meal_tracker/user_menu.dart'; // Імпортуємо user_menu
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -24,11 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        // Переходимо на головне меню при успішному логіні
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => UserMenu()),
-        );
+        // Тут більше немає переходу на UserMenu
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
