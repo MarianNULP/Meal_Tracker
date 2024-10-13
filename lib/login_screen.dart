@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:meal_tracker/user_menu.dart'; // Імпортуємо user_menu
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -12,22 +11,57 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
 
+  String capitalizeFirstLetter(String input) {
+    if (input.isEmpty) return input;
+    return input[1].toUpperCase() + input.substring(2);
+  }
+
   void _login() {
     final email = _emailController.text;
     final password = _passwordController.text;
+    const emailPattern = r'^[\w\.-]+@[a-zA-Z\d\.-]+\.[a-zA-Z]{2,}$';
+    final emailRegExp = RegExp(emailPattern);
 
     if (_formKey.currentState!.validate()) {
-      if (email == "test@example.com" && password == "password") {
+      // Додаткова перевірка для формату електронної пошти
+      if (!emailRegExp.hasMatch(email)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Please enter a valid email address"),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Перевірка логіну та паролю
+      if (password == "password") {
+        String userName = email.split('@')[0]; // Отримуємо ім'я до @
+        capitalizeFirstLetter(userName);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Login successful!"),
             backgroundColor: Colors.green,
           ),
         );
-        // Переходимо на головне меню при успішному логіні
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => UserMenu()),
+
+        // Показуємо діалог з привітанням
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Welcome"),
+              content: Text("Welcome $userName!"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text("OK"),
+                ),
+              ],
+            );
+          },
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -39,6 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
