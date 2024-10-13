@@ -15,17 +15,23 @@ class _UserMenuState extends State<UserMenu> {
   }
 
   final List<Widget> _pages = <Widget>[
-    BalancePage(),
-    TransactionsPage(),
-    BudgetPage(),
+    RecipesPage(),
+    CalendarPage(),
+    DailyExpensesPage(),
     SettingsPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        title: Text('Головне меню'),
+        title: Text(
+          'Головне меню',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.blueAccent,
+        elevation: 0,
       ),
       body: Center(
         child: _pages.elementAt(_selectedIndex),
@@ -33,16 +39,16 @@ class _UserMenuState extends State<UserMenu> {
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
-            label: 'Баланс',
+            icon: Icon(Icons.receipt),
+            label: 'Рецепти',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.swap_horiz),
-            label: 'Транзакції',
+            icon: Icon(Icons.calendar_today),
+            label: 'Календар',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.pie_chart),
-            label: 'Бюджет',
+            icon: Icon(Icons.money),
+            label: 'Витрати',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
@@ -50,45 +56,44 @@ class _UserMenuState extends State<UserMenu> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: Colors.blueAccent,
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
         onTap: _onItemTapped,
       ),
     );
   }
 }
 
-class BalancePage extends StatelessWidget {
+class RecipesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Баланс',
-        style: TextStyle(fontSize: 24),
-      ),
+    return _buildPageContent(
+      title: 'Рецепти',
+      content: 'Тут будуть ваші улюблені рецепти.',
+      icon: Icons.receipt,
     );
   }
 }
 
-class TransactionsPage extends StatelessWidget {
+class CalendarPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Транзакції',
-        style: TextStyle(fontSize: 24),
-      ),
+    return _buildPageContent(
+      title: 'Календар',
+      content: 'Тут ви можете планувати ваші прийоми їжі.',
+      icon: Icons.calendar_today,
     );
   }
 }
 
-class BudgetPage extends StatelessWidget {
+class DailyExpensesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Бюджет',
-        style: TextStyle(fontSize: 24),
-      ),
+    return _buildPageContent(
+      title: 'Витрати на кожен день',
+      content: 'Тут ви можете відстежувати витрати.',
+      icon: Icons.money,
     );
   }
 }
@@ -96,11 +101,50 @@ class BudgetPage extends StatelessWidget {
 class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Налаштування',
-        style: TextStyle(fontSize: 24),
-      ),
+    return _buildPageContent(
+      title: 'Налаштування',
+      content: 'Налаштуйте свій профіль.',
+      icon: Icons.settings,
     );
   }
+}
+
+Widget _buildPageContent({required String title, required String content, required IconData icon}) {
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 50, color: Colors.blueAccent),
+            SizedBox(height: 20),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent,
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              content,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

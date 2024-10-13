@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:meal_tracker/login_screen.dart';
+import 'package:meal_tracker/home_screen.dart'; // Імпортуйте екран головної сторінки
 
 void main() {
   runApp(const MyApp());
@@ -11,11 +11,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Login Demo',
+      title: 'Meal Tracker',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: LoginScreen(), // Головний екран - екран логіну
+      home: HomeScreen(), // Викликаємо головну сторінку
     );
   }
 }

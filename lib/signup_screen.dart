@@ -1,27 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:meal_tracker/forgot_password_screen.dart';
-import 'package:meal_tracker/signup_screen.dart';
-import 'package:meal_tracker/user_menu.dart';
+import 'package:meal_tracker/login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key}); // Використовуйте super.key безпосередньо
-
+class SignupScreen extends StatefulWidget {
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _SignupScreenState createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
-  bool _rememberMe = false; // Додано поле для запам'ятовування
 
-  void _login() {
-    // Відкриваємо головне меню без перевірки логіну та паролю
-    Navigator.push(
+  void _signup() {
+    // Показ повідомлення про успішну реєстрацію
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Обліковий запис створено для ${_emailController.text}"),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // Переходить на екран логіну
+    Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => UserMenu()),
+      MaterialPageRoute(builder: (context) => LoginScreen()),
     );
   }
 
@@ -30,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        title: Text('Трекер харчування'),
+        title: Text('Реєстрація'),
         centerTitle: true,
         backgroundColor: Colors.blueAccent,
         elevation: 0,
@@ -45,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Ласкаво просимо до Трекера харчування!',
+                    'Створіть новий обліковий запис',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
@@ -89,26 +92,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _rememberMe,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _rememberMe = value!;
-                          });
-                        },
-                      ),
-                      Text(
-                        'Запам\'ятати мене',
-                        style: TextStyle(color: Colors.black54, fontSize: 16),
-                      ),
-                    ],
-                  ),
                   SizedBox(height: 40),
                   ElevatedButton(
-                    onPressed: _login,
+                    onPressed: _signup,
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 16.0),
                       shape: RoundedRectangleBorder(
@@ -117,36 +103,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       backgroundColor: Colors.blueAccent,
                     ),
                     child: Text(
-                      'Увійти',
+                      'Зареєструватися',
                       style: TextStyle(fontSize: 18),
                     ),
                   ),
                   SizedBox(height: 20),
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => ForgotPasswordScreen(),
-                        ),
+                        MaterialPageRoute(builder: (context) => LoginScreen()),
                       );
                     },
                     child: Text(
-                      'Забули пароль?',
-                      style: TextStyle(color: Colors.blueAccent),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SignupScreen(),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'Немає облікового запису? Зареєструйтесь',
+                      'Вже є обліковий запис? Увійдіть',
                       style: TextStyle(color: Colors.blueAccent),
                     ),
                   ),
