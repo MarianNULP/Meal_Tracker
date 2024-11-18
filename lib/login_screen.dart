@@ -22,13 +22,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _login() {
-<<<<<<< HEAD
     // Відкриваємо головне меню без перевірки логіну та паролю
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => UserMenu()),
     );
-=======
     final email = _emailController.text;
     final password = _passwordController.text;
     const emailPattern = r'^[\w\.-]+@[a-zA-Z\d\.-]+\.[a-zA-Z]{2,}$';
@@ -84,7 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     }
->>>>>>> main
   }
 
 
