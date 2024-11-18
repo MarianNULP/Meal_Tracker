@@ -1,6 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';import 'package:meal_tracker/forgot_password_screen.dart';
+import 'package:meal_tracker/signup_screen.dart';
+import 'package:meal_tracker/user_menu.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key}); // Використовуйте super.key безпосередньо
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -10,6 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
+  bool _rememberMe = false; // Додано поле для запам'ятовування
 
   String capitalizeFirstLetter(String input) {
     if (input.isEmpty) return input;
@@ -17,6 +22,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _login() {
+    // Відкриваємо головне меню без перевірки логіну та паролю
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => UserMenu()),
+    );
     final email = _emailController.text;
     final password = _passwordController.text;
     const emailPattern = r'^[\w\.-]+@[a-zA-Z\d\.-]+\.[a-zA-Z]{2,}$';
@@ -80,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        title: Text('Personal Financial Tracker'),
+        title: Text('Трекер харчування'),
         centerTitle: true,
         backgroundColor: Colors.blueAccent,
         elevation: 0,
@@ -95,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Welcome to Personal Financial Tracker!',
+                    'Ласкаво просимо до Трекера харчування!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
@@ -107,28 +117,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _emailController,
                     decoration: InputDecoration(
-                      labelText: 'Email',
+                      labelText: 'Електронна пошта',
                       prefixIcon: Icon(Icons.email),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                     ),
                     keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      } else if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
                   ),
                   SizedBox(height: 20),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
                     decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: 'Пароль',
                       prefixIcon: Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -146,14 +148,23 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      } else if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _rememberMe,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            _rememberMe = value!;
+                          });
+                        },
+                      ),
+                      Text(
+                        'Запам\'ятати мене',
+                        style: TextStyle(color: Colors.black54, fontSize: 16),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 40),
                   ElevatedButton(
@@ -166,26 +177,36 @@ class _LoginScreenState extends State<LoginScreen> {
                       backgroundColor: Colors.blueAccent,
                     ),
                     child: Text(
-                      'Login',
+                      'Увійти',
                       style: TextStyle(fontSize: 18),
                     ),
                   ),
                   SizedBox(height: 20),
                   TextButton(
                     onPressed: () {
-                      // Дії на забутий пароль
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ForgotPasswordScreen(),
+                        ),
+                      );
                     },
                     child: Text(
-                      'Forgot Password?',
+                      'Забули пароль?',
                       style: TextStyle(color: Colors.blueAccent),
                     ),
                   ),
                   TextButton(
                     onPressed: () {
-                      // Дії на реєстрацію
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SignupScreen(),
+                        ),
+                      );
                     },
                     child: Text(
-                      'Don\'t have an account? Sign up',
+                      'Немає облікового запису? Зареєструйтесь',
                       style: TextStyle(color: Colors.blueAccent),
                     ),
                   ),
