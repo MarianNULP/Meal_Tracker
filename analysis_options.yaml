@@ -10,6 +10,7 @@ analyzer:
     dead_code: error
     unused_import: error
     unused_element: ignore
+    lines_longer_than_80_chars: ignore
 
 linter:
   rules:
