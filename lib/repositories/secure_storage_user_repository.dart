@@ -4,12 +4,13 @@ import 'package:meal_tracker/repositories/user_repository.dart';
 class SecureStorageUserRepository implements UserRepository {
   final _storage = const FlutterSecureStorage();
 
-  @override
-  Future<void> saveUser(Map<String, String> user) async {
-    await _storage.write(key: 'name', value: user['name']);
-    await _storage.write(key: 'email', value: user['email']);
-    await _storage.write(key: 'password', value: user['password']);
-  }
+@override
+Future<void> saveUser(Map<String, dynamic> user) async {
+  await _storage.write(key: 'name', value: user['name'] as String?);
+  await _storage.write(key: 'email', value: user['email'] as String?);
+  await _storage.write(key: 'password', value: user['password'] as String?);
+}
+
 
   @override
   Future<Map<String, String>?> getUser() async {
