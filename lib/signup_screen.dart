@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Підключення пакету
 import 'package:meal_tracker/login_screen.dart';
+import 'package:meal_tracker/user_menu.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -42,10 +43,10 @@ void _signup() async {
           ),
         );
 
-        // Перехід на екран логіну
+        // Перехід на екран UserMenu
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute<Widget>(builder: (context) => const LoginScreen()),
+          MaterialPageRoute<Widget>(builder: (context) => const UserMenu()),
         );
       }
     } catch (e) {
@@ -72,6 +73,7 @@ void _signup() async {
     }
   }
 }
+
 
 
   // Валідація даних

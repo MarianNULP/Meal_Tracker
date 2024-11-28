@@ -22,28 +22,46 @@ class LoginScreenState extends State<LoginScreen> {
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(); // Ініціалізація сховища
 
-  void _login() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
+void _login() async {
+  final email = _emailController.text.trim();
+  final password = _passwordController.text;
 
-    if (_formKey.currentState!.validate()) {
-      // Перевіряємо, чи є такі дані в сховищі
-      final storedEmail = await _storage.read(key: 'email');
-      final storedPassword = await _storage.read(key: 'password');
+  if (_formKey.currentState!.validate()) {
+    final storedEmail = await _storage.read(key: 'email');
+    final storedPassword = await _storage.read(key: 'password');
 
-      if (storedEmail == email && storedPassword == password && mounted) {
+    if (storedEmail == email && storedPassword == password) {
+      if (mounted) {
+        // Якщо прапорець "Запам'ятати мене" встановлено
+        if (_rememberMe) {
+          await _storage.write(key: 'authToken', value: 'some_generated_token');
+        } else {
+          // Якщо прапорець вимкнено — видаляємо токен
+          await _storage.delete(key: 'authToken');
+        }
+
+        // Зберігаємо стан прапорця
+        await _storage.write(key: 'rememberMe', value: _rememberMe.toString());
+
+        // Повідомлення про успішний вхід
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Успішний вхід!'),
+            content: Text('Успішний вхід'),
             backgroundColor: Colors.green,
           ),
         );
 
+        // Затримка перед переходом
+        await Future.delayed(const Duration(seconds: 1));
+
         // Перехід до меню користувача
-        Navigator.pushReplacement( context,
+        Navigator.pushReplacement(
+          context,
           MaterialPageRoute<Widget>(builder: (context) => const UserMenu()),
         );
-      } if (mounted) {
+      }
+    } else {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Невірний логін або пароль'),
@@ -53,6 +71,10 @@ class LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+}
+
+
+
 
   @override
   Widget build(BuildContext context) {
