@@ -24,8 +24,10 @@ class SharedPreferencesUserRepository implements UserRepository {
   }
 }
 
+
 abstract class UserRepository {
   Future<void> saveUser(Map<String, dynamic> user);
   Future<Map<String, dynamic>?> getUser();
   Future<void> deleteUser();
 }
+
