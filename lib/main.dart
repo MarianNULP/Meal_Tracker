@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: HomeScreen(), // Викликаємо головну сторінку
+      home: const HomeScreen(), // Викликаємо головну сторінку
     );
   }
 }

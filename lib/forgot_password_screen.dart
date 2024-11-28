@@ -1,12 +1,16 @@
+// ignore_for_file: lines_longer_than_80_chars, prefer_const_constructors
+
 import 'package:flutter/material.dart';
 import 'package:meal_tracker/login_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+
   @override
-  _ForgotPasswordScreenState createState() => _ForgotPasswordScreenState();
+  ForgotPasswordScreenState createState() => ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final TextEditingController _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -14,7 +18,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     // Дії з відновлення пароля (наприклад, надіслати на email)
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Посилання для відновлення пароля надіслано на ${_emailController.text}"),
+        content: Text('Посилання для відновлення пароля надіслано на ${_emailController.text}'),
         backgroundColor: Colors.blueAccent,
       ),
     );
@@ -22,7 +26,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     // Повернення на екран логіну
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
+      MaterialPageRoute<Widget>(builder: (context) => const LoginScreen()),
     );
   }
 
@@ -39,7 +43,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
               child: Column(
@@ -70,7 +74,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       labelText: 'Електронна пошта',
                       prefixIcon: Icon(Icons.email, color: Colors.blueAccent),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.0),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     keyboardType: TextInputType.emailAddress,
@@ -85,10 +89,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ElevatedButton(
                     onPressed: _resetPassword,
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      padding: EdgeInsets.symmetric(vertical: 16),
                       backgroundColor: Colors.blueAccent,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: Text(
@@ -101,7 +105,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => LoginScreen()),
+                        MaterialPageRoute<Widget>(builder: (context) => LoginScreen()),
                       );
                     },
                     child: Text(
