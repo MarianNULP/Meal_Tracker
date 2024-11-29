@@ -2,8 +2,60 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
+// Модель для рецепта
+class Recipe {
+  final String title;
+  final String imageUrl;
+  final String instructions;
 
+  Recipe(
+      {required this.title,
+      required this.imageUrl,
+      required this.instructions});
+
+  factory Recipe.fromJson(Map<String, dynamic> json) {
+    return Recipe(
+      title: json['title'] as String, // Явне приведення до String
+      imageUrl: json['image'] as String, // Явне приведення до String
+      instructions: (json['instructions'] ?? 'Немає інструкцій')
+          as String, // Явне приведення до String
+    );
+  }
+}
+
+// Функція для отримання рецептів з Spoonacular API
+Future<List<Recipe>> fetchRecipes(String query) async {
+  final apiKey = '3fc94d9307a54a5684f7436161176f55'; // Замініть на ваш API ключ
+  final url =
+      'https://api.spoonacular.com/recipes/complexSearch?query=$query&apiKey=$apiKey';
+
+  final response = await http.get(Uri.parse(url));
+
+if (response.statusCode == 200) {
+  final data = json.decode(response.body);
+
+  // Перевірка, чи 'results' є списком
+  if (data['results'] != null && data['results'] is List) {
+    final List<dynamic> results = data['results'] as List<dynamic>;  // Приведення до List<dynamic>
+    
+    // Перевіряємо, чи кожен елемент в списку є Map<String, dynamic>
+    return results
+        .map((recipeJson) =>
+            Recipe.fromJson(recipeJson as Map<String, dynamic>))  // Перетворюємо елементи на Map<String, dynamic>
+        .toList();
+  } else {
+    throw Exception('Невірний формат даних для results');
+  }
+} else {
+  throw Exception('Не вдалося отримати рецепти');
+}
+
+}
+
+// Головне меню
 class UserMenu extends StatefulWidget {
   const UserMenu({super.key});
 
@@ -39,11 +91,12 @@ class UserMenuState extends State<UserMenu> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Відсутнє з\'єднання з інтернетом'),
-          content: const Text('Інтернет-з\'єднання не виявлено. Деякі функції можуть бути обмежені.'),
+          content: const Text(
+              'Інтернет-з\'єднання не виявлено. Деякі функції можуть бути обмежені.'),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Закрити діалог
+                Navigator.of(context).pop();
               },
               child: const Text('Закрити'),
             ),
@@ -115,18 +168,70 @@ class UserMenuState extends State<UserMenu> {
   }
 }
 
-class RecipesPage extends StatelessWidget {
+// Сторінка для відображення рецептів
+class RecipesPage extends StatefulWidget {
   const RecipesPage({super.key});
 
   @override
+  _RecipesPageState createState() => _RecipesPageState();
+}
+
+class _RecipesPageState extends State<RecipesPage> {
+  late Future<List<Recipe>> recipes;
+
+  @override
+  void initState() {
+    super.initState();
+    recipes = fetchRecipes('pasta'); // Ви можете змінити запит на іншу страву
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return _buildPageContent(
-      title: 'Рецепти',
-      content: 'Тут будуть ваші улюблені рецепти.',
-      icon: Icons.receipt,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Рецепти'),
+        backgroundColor: Colors.blueAccent,
+      ),
+      body: FutureBuilder<List<Recipe>>(
+        future: recipes,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Помилка: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+                child: Text('Немає рецептів для відображення.'));
+          } else {
+            final recipeList = snapshot.data!;
+            return ListView.builder(
+              itemCount: recipeList.length,
+              itemBuilder: (context, index) {
+                final recipe = recipeList[index];
+                return Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    title: Text(recipe.title,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    subtitle: Text(recipe.instructions),
+                    trailing: Image.network(recipe.imageUrl),
+                  ),
+                );
+              },
+            );
+          }
+        },
+      ),
     );
   }
 }
+
+// Інші сторінки залишаються такими ж
 
 class CalendarPage extends StatelessWidget {
   const CalendarPage({super.key});
@@ -159,8 +264,6 @@ class SettingsPage extends StatelessWidget {
 
   const SettingsPage({super.key});
 
-  
-
   void _confirmLogout(BuildContext context) {
     showDialog(
       context: context,
@@ -180,7 +283,8 @@ class SettingsPage extends StatelessWidget {
                 // Очищення даних із Secure Storage
                 await _storage.deleteAll();
                 Navigator.of(context).pop(); // Закрити діалогове вікно
-                Navigator.of(context).pushReplacementNamed('/login'); // Перехід на екран входу
+                Navigator.of(context)
+                    .pushReplacementNamed('/login'); // Перехід на екран входу
               },
               child: const Text('Вийти'),
             ),
@@ -203,174 +307,84 @@ class SettingsPage extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        child: FutureBuilder<String?>( 
-          future: _storage.read(key: 'email'),
-          builder: (context, snapshot) {
-            final String currentEmail = snapshot.data ?? 'Немає даних';
+        child: FutureBuilder<String?>(
+            future: _storage.read(key: 'email'),
+            builder: (context, snapshot) {
+              final String currentEmail = snapshot.data ?? 'Немає даних';
 
-            return Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Налаштування профілю',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueAccent,
+              return Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Налаштування профілю',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Поточний логін:',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                      Text(
-                        currentEmail,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blueAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  const Divider(thickness: 1),
-                  const SizedBox(height: 20),
-                  Form(
-                    key: formKey,
-                    child: Column(
+                    const SizedBox(height: 20),
+                    Row(
                       children: [
-                        TextFormField(
-                          controller: emailController,
-                          decoration: const InputDecoration(
-                            labelText: 'Новий логін (email)',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Введіть email';
-                            }
-                            if (!RegExp(r'^[\w\.-]+@[a-zA-Z\d\.-]+\.[a-zA-Z]{2,}$')
-                                .hasMatch(value)) {
-                              return 'Некоректний email';
-                            }
-                            return null;
-                          },
+                        const Text(
+                          'Електронна пошта: ',
+                          style: TextStyle(fontSize: 18),
                         ),
-                        const SizedBox(height: 20),
-                        TextFormField(
-                          controller: passwordController,
-                          decoration: const InputDecoration(
-                            labelText: 'Новий пароль',
-                            border: OutlineInputBorder(),
+                        Text(
+                          currentEmail,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Введіть пароль';
-                            }
-                            if (value.length < 6) {
-                              return 'Пароль має бути не менше 6 символів';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () async {
-                            if (formKey.currentState!.validate()) {
-                              await _storage.write(
-                                key: 'email',
-                                value: emailController.text,
-                              );
-                              await _storage.write(
-                                key: 'password',
-                                value: passwordController.text,
-                              );
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Дані успішно оновлено!'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                              emailController.clear();
-                              passwordController.clear();
-                            }
-                          },
-                          child: const Text('Зберегти зміни'),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Divider(thickness: 1),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => _confirmLogout(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () => _confirmLogout(context),
+                      child: const Text('Вийти'),
                     ),
-                    child: const Text(
-                      'Вийти з акаунту',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+                  ],
+                ),
+              );
+            }),
       ),
     );
   }
 }
 
-Widget _buildPageContent({required String title, required String content, required IconData icon}) {
-  return Padding(
-    padding: const EdgeInsets.all(16),
+Widget _buildPageContent(
+    {required String title, required String content, required IconData icon}) {
+  return Center(
     child: Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 50, color: Colors.blueAccent),
-            const SizedBox(height: 20),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
+      child: SizedBox(
+        width: 300,
+        height: 300,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 100, color: Colors.blueAccent),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              content,
-              style: const TextStyle(fontSize: 18),
-            ),
-          ],
+              const SizedBox(height: 20),
+              Text(content, textAlign: TextAlign.center),
+            ],
+          ),
         ),
       ),
     ),

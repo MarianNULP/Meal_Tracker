@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_secure_storage: ^8.0.0
+  http: ^0.13.3
 
 
 
@@ -38,7 +39,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.3.3
-  http: ^1.2.2
   get_it: ^8.0.2
   connectivity_plus: ^3.0.3
 
