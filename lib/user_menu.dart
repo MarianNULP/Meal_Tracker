@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:async';
 
 class UserMenu extends StatefulWidget {
   const UserMenu({super.key});
@@ -10,11 +12,55 @@ class UserMenu extends StatefulWidget {
 
 class UserMenuState extends State<UserMenu> {
   int _selectedIndex = 0;
+  final Connectivity _connectivity = Connectivity();
+  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
 
-  void _onItemTapped(int index) {
+  @override
+  void initState() {
+    super.initState();
+    _connectivitySubscription =
+        _connectivity.onConnectivityChanged.listen((ConnectivityResult result) {
+      if (result == ConnectivityResult.none) {
+        _showNoConnectionDialog();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
+  }
+
+  void _showNoConnectionDialog() {
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Відсутнє з\'єднання з інтернетом'),
+          content: const Text('Інтернет-з\'єднання не виявлено. Деякі функції можуть бути обмежені.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Закрити діалог
+              },
+              child: const Text('Закрити'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _onItemTapped(int index) async {
     setState(() {
       _selectedIndex = index;
     });
+
+    var connectivityResult = await _connectivity.checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      _showNoConnectionDialog();
+    }
   }
 
   final List<Widget> _pages = <Widget>[
@@ -112,6 +158,37 @@ class SettingsPage extends StatelessWidget {
 
   const SettingsPage({super.key});
 
+  
+
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Підтвердження'),
+          content: const Text('Ви дійсно хочете вийти з акаунту?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Закрити діалогове вікно
+              },
+              child: const Text('Скасувати'),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Очищення даних із Secure Storage
+                await _storage.deleteAll();
+                Navigator.of(context).pop(); // Закрити діалогове вікно
+                Navigator.of(context).pushReplacementNamed('/login'); // Перехід на екран входу
+              },
+              child: const Text('Вийти'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final TextEditingController emailController = TextEditingController();
@@ -125,7 +202,7 @@ class SettingsPage extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        child: FutureBuilder<String?>(
+        child: FutureBuilder<String?>( 
           future: _storage.read(key: 'email'),
           builder: (context, snapshot) {
             final String currentEmail = snapshot.data ?? 'Немає даних';
@@ -213,9 +290,13 @@ class SettingsPage extends StatelessWidget {
                           onPressed: () async {
                             if (formKey.currentState!.validate()) {
                               await _storage.write(
-                                  key: 'email', value: emailController.text,);
+                                key: 'email',
+                                value: emailController.text,
+                              );
                               await _storage.write(
-                                  key: 'password', value: passwordController.text,);
+                                key: 'password',
+                                value: passwordController.text,
+                              );
 
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -223,7 +304,6 @@ class SettingsPage extends StatelessWidget {
                                   backgroundColor: Colors.green,
                                 ),
                               );
-                              // Оновлення поточного email після збереження
                               emailController.clear();
                               passwordController.clear();
                             }
@@ -231,6 +311,20 @@ class SettingsPage extends StatelessWidget {
                           child: const Text('Зберегти зміни'),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(thickness: 1),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () => _confirmLogout(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    ),
+                    child: const Text(
+                      'Вийти з акаунту',
+                      style: TextStyle(fontSize: 18),
                     ),
                   ),
                 ],
@@ -242,8 +336,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 }
-
-
 
 Widget _buildPageContent({required String title, required String content, required IconData icon}) {
   return Padding(
@@ -260,14 +352,14 @@ Widget _buildPageContent({required String title, required String content, requir
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(icon, size: 50, color: Colors.blueAccent),
             const SizedBox(height: 20),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 32,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.blueAccent,
               ),
@@ -275,7 +367,6 @@ Widget _buildPageContent({required String title, required String content, requir
             const SizedBox(height: 20),
             Text(
               content,
-              textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 18),
             ),
           ],
