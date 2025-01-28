@@ -1,18 +1,16 @@
-// lib/data/repositories/local_user_repository.dart
-
+// data/repositories/local_user_repository.dart
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:meal_tracker/data/repositories/user_repository.dart';
+import 'user_repository.dart';
 
 class LocalUserRepository implements UserRepository {
-  static const String keyName = 'user_name';
-  static const String keyEmail = 'user_email';
-  static const String keyPassword = 'user_password';
+  static const _keyName = 'user_name';
+  static const _keyEmail = 'user_email';
+  static const _keyPassword = 'user_password';
 
   final FlutterSecureStorage _storage;
 
-  LocalUserRepository({
-    FlutterSecureStorage? storage,
-  }) : _storage = storage ?? const FlutterSecureStorage();
+  LocalUserRepository({FlutterSecureStorage? storage})
+      : _storage = storage ?? const FlutterSecureStorage();
 
   @override
   Future<void> registerUser({
@@ -20,25 +18,24 @@ class LocalUserRepository implements UserRepository {
     required String email,
     required String password,
   }) async {
-    await _storage.write(key: keyName, value: name);
-    await _storage.write(key: keyEmail, value: email);
-    await _storage.write(key: keyPassword, value: password);
+    await _storage.write(key: _keyName, value: name);
+    await _storage.write(key: _keyEmail, value: email);
+    await _storage.write(key: _keyPassword, value: password);
   }
 
   @override
   Future<Map<String, String>?> getUser() async {
-    final name = await _storage.read(key: keyName);
-    final email = await _storage.read(key: keyEmail);
-    final password = await _storage.read(key: keyPassword);
+    final name = await _storage.read(key: _keyName);
+    final email = await _storage.read(key: _keyEmail);
+    final pass = await _storage.read(key: _keyPassword);
 
-    if (name == null || email == null || password == null) {
-      return null; // Користувач не збережений
+    if (name == null || email == null || pass == null) {
+      return null;
     }
-
     return {
       'name': name,
       'email': email,
-      'password': password,
+      'password': pass,
     };
   }
 
@@ -48,9 +45,9 @@ class LocalUserRepository implements UserRepository {
     required String email,
     required String password,
   }) async {
-    await _storage.write(key: keyName, value: name);
-    await _storage.write(key: keyEmail, value: email);
-    await _storage.write(key: keyPassword, value: password);
+    await _storage.write(key: _keyName, value: name);
+    await _storage.write(key: _keyEmail, value: email);
+    await _storage.write(key: _keyPassword, value: password);
   }
 
   @override

@@ -1,15 +1,12 @@
 // lib/features/auth/login_screen.dart
-
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
 import 'package:meal_tracker/data/repositories/user_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   final UserRepository userRepository;
-
-  const LoginScreen({
-    required this.userRepository,
-    super.key,
-  });
+  const LoginScreen({required this.userRepository, super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -17,36 +14,75 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController _emailCtrl = TextEditingController();
-  final TextEditingController _passCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
 
   Future<void> _onLogin() async {
+    // Перевіряємо інтернет
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      // Показуємо діалог про відсутність інтернету
+      _showDialog(
+        title: 'Помилка',
+        message: 'Немає з\'єднання з інтернетом. Логін недоступний.',
+      );
+      return;
+    }
+
     if (_formKey.currentState?.validate() == true) {
       final email = _emailCtrl.text.trim();
       final password = _passCtrl.text;
 
-      // Дістаємо з репозиторію дані користувача (якщо є)
       final userData = await widget.userRepository.getUser();
       if (userData != null) {
-        // Перевіряємо збіг email/пароль
         if (userData['email'] == email && userData['password'] == password) {
-          if (!mounted) return;
           // Успіх
-          Navigator.pushReplacementNamed(context, '/home');
+          _showDialog(
+            title: 'Логін успішний',
+            message: 'Ви увійшли в додаток.',
+            onOk: () {
+              Navigator.of(context).pop(); // закриваємо діалог
+              Navigator.pushReplacementNamed(context, '/home');
+            },
+          );
         } else {
-          // Невірний логін або пароль
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Невірні облікові дані')),
+          // Невірні дані
+          _showDialog(
+            title: 'Помилка',
+            message: 'Невірний логін або пароль.',
           );
         }
       } else {
-        // Користувач взагалі не зареєстрований
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Спочатку зареєструйтеся')),
+        // Користувача немає
+        _showDialog(
+          title: 'Помилка',
+          message: 'Спочатку зареєструйтесь (даних немає).',
         );
       }
     }
+  }
+
+  void _showDialog({
+    required String title,
+    required String message,
+    VoidCallback? onOk,
+  }) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: onOk ?? () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -61,26 +97,42 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Вхід'),
+        centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
+              const Text(
+                'Увійти в Meal Tracker',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
               TextFormField(
                 controller: _emailCtrl,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Введіть email' : null,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (val) =>
+                val == null || val.isEmpty ? 'Введіть email' : null,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _passCtrl,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Пароль'),
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Введіть пароль' : null,
+                decoration: InputDecoration(
+                  labelText: 'Пароль',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (val) =>
+                val == null || val.isEmpty ? 'Введіть пароль' : null,
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -92,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: () {
                   Navigator.pushReplacementNamed(context, '/register');
                 },
-                child: const Text('Немає облікового запису? Зареєструватися'),
+                child: const Text('Немає акаунта? Зареєструватись'),
               ),
             ],
           ),
