@@ -1,85 +1,59 @@
+// main.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:meal_tracker/home_screen.dart';
-import 'package:meal_tracker/login_screen.dart';
-import 'package:meal_tracker/user_menu.dart';
-
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final storage = const FlutterSecureStorage();
-
-  // Читаємо дані з пам'яті
-  final rememberMe = await storage.read(key: 'rememberMe') == 'true';
-  final authToken = await storage.read(key: 'authToken');
-
-  runApp(
-    MaterialApp(
-      home: (rememberMe && authToken != null)
-          ? const UserMenu() // Якщо "Запам'ятати мене" ввімкнено, переходимо до UserMenu
-          : const LoginScreen(), // Інакше — до екрана логіну
-    ),
-  );
-}
+import 'package:meal_tracker/features/auth/login_screen.dart';
+import 'package:meal_tracker/features/auth/register_screen.dart';
+import 'package:meal_tracker/features/home/home_screen.dart';
+import 'package:meal_tracker/data/repositories/local_user_repository.dart';
+import 'package:meal_tracker/data/repositories/user_repository.dart';
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final UserRepository userRepository = LocalUserRepository();
+
+  MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Meal Tracker',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          primary: Colors.deepPurple,
+          secondary: Colors.orangeAccent,
+        ),
+        scaffoldBackgroundColor: Colors.grey[100],
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.deepPurple,
+          elevation: 0,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.deepPurple,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.deepPurple,
+            side: const BorderSide(color: Colors.deepPurple),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.deepPurple,
+          ),
+        ),
       ),
-      home: const StartupScreen(), // Викликаємо екран запуску
-    );
-  }
-}
-
-class StartupScreen extends StatefulWidget {
-  const StartupScreen({super.key});
-
-  @override
-  State<StartupScreen> createState() => _StartupScreenState();
-}
-
-class _StartupScreenState extends State<StartupScreen> {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
-
-  @override
-  void initState() {
-    super.initState();
-    _checkLoginStatus();
-  }
-
-  Future<void> _checkLoginStatus() async {
-    // Перевіряємо, чи є токен у сховищі
-    final token = await _storage.read(key: 'authToken');
-    final rememberMe = await _storage.read(key: 'rememberMe');
-
-    if (token != null && rememberMe == 'true') {
-      // Якщо токен існує і функція "Запам'ятати мене" активна
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute<Widget>(builder: (context) => const UserMenu()),
-      );
-    } else {
-      // Якщо даних немає, перенаправляємо на HomeScreen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute<Widget>(builder: (context) => const HomeScreen()),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Повертаємо тимчасовий екран, поки йде перевірка
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
+      home: LoginScreen(userRepository: userRepository),
+      routes: {
+        '/login': (context) => LoginScreen(userRepository: userRepository),
+        '/register': (context) => RegisterScreen(userRepository: userRepository),
+        '/home': (context) => HomeScreen(userRepository: userRepository),
+      },
     );
   }
 }
