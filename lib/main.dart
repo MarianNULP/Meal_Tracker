@@ -1,6 +1,11 @@
-// main.dart
 import 'package:flutter/material.dart';
+
+// Якщо у вас є LocalUserRepository
 import 'package:meal_tracker/data/repositories/local_user_repository.dart';
+// Якщо у вас є RemoteUserRepository у такому-то файлі
+// import 'package:meal_tracker/data/repositories/remote_user_repository.dart';
+
+// Решта імпортів:
 import 'package:meal_tracker/data/repositories/user_repository.dart';
 import 'package:meal_tracker/features/splash/splash_screen.dart';
 import 'package:meal_tracker/features/auth/login_screen.dart';
@@ -9,18 +14,25 @@ import 'package:meal_tracker/features/home/home_screen.dart';
 import 'package:meal_tracker/features/profile/profile_screen.dart';
 import 'package:meal_tracker/features/about/about_screen.dart';
 import 'package:meal_tracker/features/menu/user_menu.dart';
+import 'package:meal_tracker/features/meal_api/meal_api_screen.dart';
 
-void main() => runApp(MyApp());
-
-class MyApp extends StatelessWidget {
+void main() {
+  // Оберіть, який репозиторій використовувати:
+  // final userRepository = RemoteUserRepository(baseUrl: 'https://example.com');
   final UserRepository userRepository = LocalUserRepository();
 
-  MyApp({super.key});
+  runApp(MyApp(userRepository: userRepository));
+}
+
+class MyApp extends StatelessWidget {
+  final UserRepository userRepository;
+
+  const MyApp({super.key, required this.userRepository});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Meal Tracker Lab-3',
+      title: 'Meal Tracker Lab',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSwatch().copyWith(
           primary: Colors.deepPurple,
@@ -44,8 +56,10 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      // Початковий екран - SplashScreen
+      // Початковий екран (SplashScreen або LoginScreen)
       home: SplashScreen(userRepository: userRepository),
+
+      // Маршрути
       routes: {
         '/splash': (context) => SplashScreen(userRepository: userRepository),
         '/login': (context) => LoginScreen(userRepository: userRepository),
@@ -54,6 +68,9 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => ProfileScreen(userRepository: userRepository),
         '/about': (context) => const AboutScreen(),
         '/userMenu': (context) => UserMenu(userRepository: userRepository),
+
+        // Якщо у вас є MealApiScreen
+        '/mealApi': (context) => const MealApiScreen(),
       },
     );
   }
