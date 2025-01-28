@@ -1,71 +1,29 @@
-import 'dart:async'; // Для StreamSubscription
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:meal_tracker/home_screen.dart';
 import 'package:meal_tracker/login_screen.dart';
-import 'package:meal_tracker/signup_screen.dart';
 import 'package:meal_tracker/user_menu.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 
-void main() {
-  runApp(MealTrackerApp());
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final storage = const FlutterSecureStorage();
+
+  // Читаємо дані з пам'яті
+  final rememberMe = await storage.read(key: 'rememberMe') == 'true';
+  final authToken = await storage.read(key: 'authToken');
+
+  runApp(
+    MaterialApp(
+      home: (rememberMe && authToken != null)
+          ? const UserMenu() // Якщо "Запам'ятати мене" ввімкнено, переходимо до UserMenu
+          : const LoginScreen(), // Інакше — до екрана логіну
+    ),
+  );
 }
 
-class MealTrackerApp extends StatefulWidget {
-  @override
-  _MealTrackerAppState createState() => _MealTrackerAppState();
-}
-
-class _MealTrackerAppState extends State<MealTrackerApp> {
-  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
-  final Connectivity _connectivity = Connectivity();
-  bool _isConnected = true;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Слухаємо зміни стану інтернет-з'єднання
-    _connectivitySubscription =
-        _connectivity.onConnectivityChanged.listen((ConnectivityResult result) {
-      if (result == ConnectivityResult.none) {
-        _showNoConnectionDialog();
-        setState(() {
-          _isConnected = false;
-        });
-      } else {
-        setState(() {
-          _isConnected = true;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _connectivitySubscription.cancel();
-    super.dispose();
-  }
-
-  void _showNoConnectionDialog() {
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Відсутнє з\'єднання з інтернетом'),
-          content: const Text(
-              'Інтернет-з\'єднання не виявлено. Деякі функції можуть бути обмежені.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Закрити'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -74,46 +32,20 @@ class _MealTrackerAppState extends State<MealTrackerApp> {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: SplashScreen(),
-      routes: {
-        '/login': (context) => LoginScreen(),
-        '/signup': (context) => SignupScreen(),
-        '/userMenu': (context) => UserMenu(),
-      },
-      builder: (context, child) {
-        // Глобальне сповіщення про статус інтернет-з'єднання
-        return Stack(
-          children: [
-            child!,
-            if (!_isConnected)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  color: Colors.red,
-                  padding: const EdgeInsets.all(10),
-                  child: const Text(
-                    'Немає підключення до інтернету',
-                    style: TextStyle(color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
+      home: const StartupScreen(), // Викликаємо екран запуску
     );
   }
 }
 
-class SplashScreen extends StatefulWidget {
+class StartupScreen extends StatefulWidget {
+  const StartupScreen({super.key});
+
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  State<StartupScreen> createState() => _StartupScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  final FlutterSecureStorage _storage = FlutterSecureStorage();
+class _StartupScreenState extends State<StartupScreen> {
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   @override
   void initState() {
@@ -121,30 +53,30 @@ class _SplashScreenState extends State<SplashScreen> {
     _checkLoginStatus();
   }
 
-  void _checkLoginStatus() async {
-    // Затримка для показу SplashScreen
-    await Future.delayed(Duration(seconds: 2));
+  Future<void> _checkLoginStatus() async {
+    // Перевіряємо, чи є токен у сховищі
+    final token = await _storage.read(key: 'authToken');
+    final rememberMe = await _storage.read(key: 'rememberMe');
 
-    // Перевірка наявності збережених даних користувача
-    String? email = await _storage.read(key: 'email');
-    String? password = await _storage.read(key: 'password');
-
-    if (email != null && password != null) {
-      // Якщо користувач залогінений
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/userMenu');
-      }
+    if (token != null && rememberMe == 'true') {
+      // Якщо токен існує і функція "Запам'ятати мене" активна
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute<Widget>(builder: (context) => const UserMenu()),
+      );
     } else {
-      // Перехід до екрану входу
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
+      // Якщо даних немає, перенаправляємо на HomeScreen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute<Widget>(builder: (context) => const HomeScreen()),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // Повертаємо тимчасовий екран, поки йде перевірка
+    return const Scaffold(
       body: Center(
         child: CircularProgressIndicator(),
       ),
