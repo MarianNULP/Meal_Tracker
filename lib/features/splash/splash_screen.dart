@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen> {
       } else {
         // Є інтернет => автологін (фактично, просто переходимо на Home)
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/userMenu');
       }
     } else {
       // Даних немає => переходимо на Login
@@ -65,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 Navigator.of(ctx).pop(); // закриваємо діалог
                 if (offlineLoginAllowed) {
                   // Переходимо в Home (офлайн-режим)
-                  Navigator.pushReplacementNamed(context, '/home');
+                  Navigator.pushReplacementNamed(context, '/userMenu');
                 } else {
                   // Повертаємося на Login
                   Navigator.pushReplacementNamed(context, '/login');
