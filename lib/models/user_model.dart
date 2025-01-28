@@ -1,11 +1,11 @@
 // lib/models/user_model.dart
 
-class User {
+class UserModel {
   final String name;
   final String email;
   final String password;
 
-  const User({
+  const UserModel({
     required this.name,
     required this.email,
     required this.password,

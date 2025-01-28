@@ -1,15 +1,13 @@
 // lib/features/home/home_screen.dart
-
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:async';
+
 import 'package:meal_tracker/data/repositories/user_repository.dart';
 
 class HomeScreen extends StatefulWidget {
   final UserRepository userRepository;
-
-  const HomeScreen({
-    required this.userRepository,
-    super.key,
-  });
+  const HomeScreen({required this.userRepository, super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,17 +19,49 @@ class _HomeScreenState extends State<HomeScreen> {
   String _password = '';
 
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameCtrl = TextEditingController();
-  final TextEditingController _emailCtrl = TextEditingController();
-  final TextEditingController _passCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+
+  late StreamSubscription<ConnectivityResult> _connectivitySub;
+  bool _isOffline = false;
 
   @override
   void initState() {
     super.initState();
-    _loadUser();
+    _loadUserData();
+    // Відстежуємо зміни інтернету:
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((result) {
+      if (result == ConnectivityResult.none) {
+        setState(() => _isOffline = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Інтернет зник! Офлайн-режим.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else {
+        setState(() => _isOffline = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Інтернет відновлено!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    });
   }
 
-  Future<void> _loadUser() async {
+  @override
+  void dispose() {
+    _connectivitySub.cancel();
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadUserData() async {
     final userData = await widget.userRepository.getUser();
     if (userData != null) {
       setState(() {
@@ -44,12 +74,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _onSaveChanges() async {
     if (_formKey.currentState?.validate() == true) {
+      // Якщо хочемо обмежити редагування при відсутності інтернету,
+      // можемо перевірити _isOffline і показати повідомлення.
+      // Наприклад:
+      if (_isOffline) {
+        _showDialog(
+          title: 'Помилка',
+          message: 'Немає інтернету. Зміни не можна зберегти.',
+        );
+        return;
+      }
+
       await widget.userRepository.updateUser(
         name: _nameCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-      await _loadUser();
+      await _loadUserData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Дані збережено!')),
@@ -58,13 +99,99 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onDeleteAccount() async {
-    await widget.userRepository.deleteUser();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Обліковий запис видалено')),
+    // Теж можемо обмежити при офлайні, але це на ваш розсуд
+    _showLogoutDialog(
+      title: 'Підтвердження',
+      message: 'Ви точно хочете видалити акаунт?',
+      onConfirm: () async {
+        await widget.userRepository.deleteUser();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Акаунт видалено')),
+        );
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      },
     );
-    // Перекидаємо користувача на екран реєстрації чи логіну
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
+
+  // Логаут (можна окремо кнопкою Log out)
+  Future<void> _onLogout() async {
+    _showLogoutDialog(
+      title: 'Вихід',
+      message: 'Ви дійсно хочете вийти?',
+      onConfirm: () async {
+        await widget.userRepository.deleteUser();
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      },
+    );
+  }
+
+  void _onPlusPressed() {
+    // CRUD-логіка "додавання" чогось
+    // Якщо офлайн => можемо заблокувати. Інакше - дозволити
+    if (_isOffline) {
+      _showDialog(
+        title: 'Офлайн режим',
+        message: 'Немає інтернету, не можна додати новий запис.',
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Натиснуто +! (додавання)')),
+    );
+  }
+
+  void _showDialog({
+    required String title,
+    required String message,
+    VoidCallback? onOk,
+  }) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: onOk ?? () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showLogoutDialog({
+    required String title,
+    required String message,
+    required VoidCallback onConfirm,
+  }) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Скасувати'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop(); // закриваємо діалог
+                onConfirm();
+              },
+              child: const Text('Так, вийти', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -75,86 +202,97 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: Text('Вітаємо, $_name ($_email)'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Log out',
+            onPressed: _onLogout,
+          ),
+        ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              'Привіт, $_name!',
-              style: const TextStyle(fontSize: 20),
-            ),
-            const SizedBox(height: 20),
-            // Форма редагування
-            Form(
+        child: Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Form(
               key: _formKey,
               child: Column(
                 children: [
+                  const Text(
+                    'Ваш профіль',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Ім’я'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Введіть ім’я';
+                    decoration: const InputDecoration(labelText: 'Ім\'я'),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'Введіть ім\'я';
                       }
-                      if (RegExp(r'\d').hasMatch(value)) {
-                        return 'Ім’я не має містити цифри';
+                      if (RegExp(r'\d').hasMatch(val)) {
+                        return 'Ім\'я не може містити цифри';
                       }
                       return null;
                     },
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailCtrl,
                     decoration: const InputDecoration(labelText: 'Email'),
-                    validator: (value) {
-                      if (value == null ||
-                          !value.contains('@') ||
-                          !value.contains('.')) {
-                        return 'Некоректна email адреса';
+                    validator: (val) {
+                      if (val == null ||
+                          !val.contains('@') ||
+                          !val.contains('.')) {
+                        return 'Некоректний Email';
                       }
                       return null;
                     },
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _passCtrl,
-                    obscureText: true,
                     decoration: const InputDecoration(labelText: 'Пароль'),
-                    validator: (value) {
-                      if (value == null || value.length < 6) {
-                        return 'Пароль має бути >= 6 символів';
+                    obscureText: true,
+                    validator: (val) {
+                      if (val == null || val.length < 6) {
+                        return 'Мін. 6 символів';
                       }
                       return null;
                     },
                   ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: _onSaveChanges,
+                    child: const Text('Зберегти зміни'),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    onPressed: _onDeleteAccount,
+                    child: const Text('Видалити акаунт'),
+                  ),
+                  if (_isOffline) ...[
+                    const SizedBox(height: 16),
+                    const Text(
+                      'УВАГА: Ви в офлайн-режимі. Деякі функції можуть бути обмежені.',
+                      style: TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _onSaveChanges,
-              child: const Text('Зберегти зміни'),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: _onDeleteAccount,
-              child: const Text('Видалити обліковий запис'),
-            ),
-          ],
+          ),
         ),
       ),
-      // Продемонструємо "плюсик" (CRUD-логіка): для прикладу – створення додаткових даних
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Далі ти можеш розширити логіку: відкрити модалку
-          // для додавання якихось даних, зберігати в локалку і т.д.
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Натиснуто + (CRUD логіка тут)')),
-          );
-        },
+        onPressed: _onPlusPressed,
         child: const Icon(Icons.add),
       ),
     );
