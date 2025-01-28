@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
             message: 'Ви увійшли в додаток.',
             onOk: () {
               Navigator.of(context).pop(); // закриваємо діалог
-              Navigator.pushReplacementNamed(context, '/home');
+              Navigator.pushReplacementNamed(context, '/userMenu');
             },
           );
         } else {
