@@ -25,6 +25,8 @@ class _UserMenuState extends State<UserMenu> {
   @override
   void initState() {
     super.initState();
+
+    // Підписуємось на зміни інтернет-з'єднання
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
           if (result == ConnectivityResult.none) {
@@ -44,7 +46,7 @@ class _UserMenuState extends State<UserMenu> {
           }
         });
 
-    // Набір сторінок - наприклад:
+    // Визначаємо сторінки нижньої навігації
     _pages = [
       HomeScreen(userRepository: widget.userRepository), // Головна
       ProfileScreen(userRepository: widget.userRepository), // Профіль
@@ -62,10 +64,24 @@ class _UserMenuState extends State<UserMenu> {
     setState(() => _selectedIndex = index);
   }
 
+  void _openRecipesPage() {
+    // Припускаємо, що в main.dart є: '/mealApi': (context) => const MealApiScreen()
+    Navigator.pushNamed(context, '/mealApi');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Показуємо одну з трьох сторінок
       body: _pages[_selectedIndex],
+
+      // Кнопка відкриття сторінки з рецептами
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openRecipesPage,
+        icon: const Icon(Icons.restaurant_menu),
+        label: const Text('Рецепти'),
+      ),
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onTap,
